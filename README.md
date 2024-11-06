@@ -15,4 +15,6 @@
 
 # Запуск через Docker compose
 
-Для запуска приложения в контейнерах докера необходимо из директории выше **/app** запустить команду `docker-compose -f ./app/dockerfiles/docker-compose.yml up --build`, для запуска в detached режиме добавляем флаг `-d`.
+Для запуска приложения в контейнерах докера необходимо из директории выше **/app** запустить команду `docker-compose -f ./app/dockerfiles/docker-compose.yml up -d --build`.
+
+При первом запуске необходимо создать таблицы в БД командой `docker-compose -f .\app\dockerfiles\docker-compose.yml exec api python -m app.main`.
