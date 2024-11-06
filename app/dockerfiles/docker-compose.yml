@@ -1,0 +1,78 @@
+name: "Mera-Capital"
+services:
+
+    nginx:
+        build:
+            context: ../../nginx
+            dockerfile: Dockerfile
+        image: nginx-api
+        container_name: nginx-api
+        ports:
+          - 80:80
+        depends_on:
+            - api
+
+    postgres-db:
+        image: postgres:17
+        container_name: postgres-db
+        restart: unless-stopped
+        env_file:
+            - ../.env
+        volumes:
+            - postgresvol:/var/lib/postgresql/data
+        expose:
+            - 5432
+
+    redis:
+        image: redis:latest
+        container_name: redis-broker
+        restart: unless-stopped
+        expose:
+            - 6379
+
+    api:
+        build:
+            context: ../..
+            dockerfile: ./app/dockerfiles/api.Dockerfile
+        image: api
+        container_name: api
+        command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+        env_file:
+            - ../.env
+        expose:
+            - 8000
+        depends_on:
+            - postgres-db
+            - redis
+    
+    worker:
+        build:
+            context: ../..
+            dockerfile: /app/dockerfiles/api.Dockerfile
+        image: curr-worker
+        container_name: curr-worker
+        command: celery -A app.celery_conf worker --loglevel=info
+        restart: unless-stopped
+        env_file:
+            - ../.env
+        depends_on:
+            - api
+
+    beat:
+        build:
+            context: ../..
+            dockerfile: /app/dockerfiles/api.Dockerfile
+        image: curr-beat
+        container_name: curr-beat
+        command: celery -A app.celery_conf beat --loglevel=info
+        restart: unless-stopped
+        env_file:
+            - ../.env
+        depends_on:
+            - api
+            - worker
+
+
+volumes:
+    postgresvol:
+        name: postgresvol
